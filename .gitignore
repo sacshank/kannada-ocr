@@ -221,3 +221,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local test dataset (not committed)
+dataset/*
+!dataset/README.md
