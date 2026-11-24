@@ -116,3 +116,45 @@ Observations:
   slip, which is how the ground-truth mistake was found.
 - Per-image Arjuna time on the development laptop varied from 38 to 81 s.
 - Only 5 images, so these numbers are a rough guide, not a conclusion.
+
+# Results on 10 images (2026-11-24)
+
+Metric: character error rate (lower is better). Tesseract used kan+eng;
+psm is Tesseract's page segmentation (layout) mode.
+
+| Image | Type | Tesseract default | Tesseract psm 4 | Tesseract psm 6 | Arjuna-OCR 1.3.3 |
+|---|---|---|---|---|---|
+| test1 | quote image | 0.122 | 0.122 | 0.102 | 0.051 |
+| test2 | quote image | 0.357 | 0.357 | 0.857 | 0.119 |
+| test3 | blurred newspaper photo, very small text | 1.000 | 0.209 | 0.135 | 0.020 |
+| test4 | WhatsApp group chat screenshot | 0.878 | 0.878 | 0.908 | 1.010 |
+| test5 | old textbook paragraph, 2 lines | 0.010 | 0.010 | 0.010 | 0.030 |
+| test6 | government document | 0.041 | 0.041 | 0.041 | 0.045 |
+| test7 | textbook | 0.867 | 0.891 | 0.331 | 0.247 |
+| test8 | newspaper paragraph | 0.801 | 0.472 | 0.010 | 0.044 |
+| test9 | Kannada and English mixed | 0.212 | 0.220 | 0.552 | 0.124 |
+| test10 | Kannada text in a different font | 0.590 | 0.590 | 0.667 | 0.308 |
+| Average | | 0.488 | 0.379 | 0.361 | 0.200 |
+| Average without test4 | | 0.444 | 0.324 | 0.301 | 0.110 |
+
+Tesseract with Kannada only (kan, default layout mode) averaged 0.516.
+Adding English helped on test9 (0.560 to 0.212) and hurt on test10
+(0.436 to 0.590).
+
+Observations:
+
+- Arjuna had the lowest average error. Tesseract's results depend strongly
+  on the layout mode (for example test8 ranges from 0.010 to 0.801), and the
+  best mode changed when the test set grew from 5 to 10 images.
+- Comparing Arjuna with the best Tesseract setting on each image, Arjuna was
+  lower on 6 of 10 images (test1, 2, 3, 7, 9, 10). Tesseract was lower or
+  equal on test4, 5, 6 and 8. This per-image best-of comparison favours
+  Tesseract, because a user cannot know which setting to choose.
+- test4 is a stress test with interface clutter that the ground truth does
+  not contain.
+- Arjuna's weakest images are test10 (0.308) and test7 (0.247); the cause has
+  not been investigated yet.
+- Arjuna time on the development laptop: 36 to 47 s per image after an
+  88.9 s model load. Tesseract timings were not recorded.
+- Ground truth for test6 to test10 has not been double-checked against the
+  images yet. Only 10 images, so these numbers are a rough guide.
