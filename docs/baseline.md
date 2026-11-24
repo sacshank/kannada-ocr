@@ -158,3 +158,52 @@ Observations:
   88.9 s model load. Tesseract timings were not recorded.
 - Ground truth for test6 to test10 has not been double-checked against the
   images yet. Only 10 images, so these numbers are a rough guide.
+
+# Final results on 10 images (2026-11-24)
+
+These results replace the earlier 10-image table. The only change is the
+test7 ground truth: five typing mistakes were corrected after comparing the
+file with the image word by word (the corrections were typed from the image,
+not copied from either engine). All other scores are unchanged from the
+previous run.
+
+Metric: character error rate (lower is better). Tesseract used kan+eng;
+psm is Tesseract's page segmentation (layout) mode.
+
+| Image | Type | Tesseract default | Tesseract psm 4 | Tesseract psm 6 | Arjuna-OCR 1.3.3 |
+|---|---|---|---|---|---|
+| test1 | quote image | 0.122 | 0.122 | 0.102 | 0.051 |
+| test2 | quote image | 0.357 | 0.357 | 0.857 | 0.119 |
+| test3 | blurred newspaper photo, very small text | 1.000 | 0.209 | 0.135 | 0.020 |
+| test4 | WhatsApp group chat screenshot | 0.878 | 0.878 | 0.908 | 1.010 |
+| test5 | old textbook paragraph, 2 lines | 0.010 | 0.010 | 0.010 | 0.030 |
+| test6 | government document | 0.041 | 0.041 | 0.041 | 0.045 |
+| test7 | textbook contents page | 0.869 | 0.893 | 0.331 | 0.238 |
+| test8 | newspaper paragraph | 0.801 | 0.472 | 0.010 | 0.044 |
+| test9 | Kannada and English mixed | 0.212 | 0.220 | 0.552 | 0.124 |
+| test10 | Kannada text in a different font | 0.590 | 0.590 | 0.667 | 0.308 |
+| Average | | 0.488 | 0.379 | 0.361 | 0.199 |
+| Average without test4 | | 0.445 | 0.324 | 0.301 | 0.109 |
+
+Tesseract with Kannada only (kan, default layout mode) averaged 0.516.
+
+Observations:
+
+- Arjuna had the lowest average error and needs no layout tuning. Tesseract
+  results depend strongly on the layout mode and on the language setting.
+- Compared with the best Tesseract setting on each image, Arjuna was lower on
+  test1, 2, 3, 7, 9 and 10. Tesseract was lower on test4, 5, 6 and 8, where
+  the differences on test5 and test6 are very small.
+- test7 (a table-like contents page): Arjuna inserted "|" separators between
+  columns, moved two lines to the end of the output, misread some digits,
+  and misread letters in two words (items 4 and 11). It read the unusual
+  spelling in item 6 correctly.
+- test10 is the weakest image for Arjuna: nearly every word has a wrong
+  letter in this font.
+- test4 is a stress test: both engines also read usernames, timestamps and
+  phone numbers that the ground truth does not contain, and Arjuna swapped
+  the order of two lines.
+- Arjuna time on the development laptop: 34 to 90 s per image, after a model
+  load of about 90 s. Timings varied between runs. Tesseract timings were
+  not recorded.
+- Only 10 images, so these numbers are a rough guide, not a conclusion.
