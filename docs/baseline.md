@@ -85,3 +85,34 @@ Reproduce with:
 
     PYTHONPATH=backend python scripts/evaluate_tesseract.py --lang kan+eng --psm 4
     PYTHONPATH=backend python scripts/evaluate_arjuna.py
+
+# Corrected results on 5 images (2026-11-24)
+
+The ground truth for test3 and test4 contained typing mistakes that were fixed
+after comparing both engines against the images. This table replaces the
+test3 and test4 values in the earlier tables. Rule used: the ground truth
+records exactly what the image shows, not what is grammatically correct.
+
+Metric: character error rate (lower is better). Tesseract used kan+eng.
+
+| Image | Tesseract default | Tesseract psm 4 | Tesseract psm 6 | Arjuna-OCR 1.3.3 |
+|---|---|---|---|---|
+| test1 | 0.122 | 0.122 | 0.102 | 0.051 |
+| test2 | 0.357 | 0.357 | 0.857 | 0.119 |
+| test3 (blurred newspaper photo, very small text) | 1.000 | 0.209 | 0.135 | 0.020 |
+| test4 (WhatsApp group chat screenshot) | 0.878 | 0.878 | 0.908 | 1.010 |
+| test5 | 0.010 | 0.010 | 0.010 | 0.030 |
+| Average | 0.473 | 0.315 | 0.402 | 0.246 |
+| Average without test4 | 0.372 | 0.175 | 0.276 | 0.055 |
+
+Observations:
+
+- Arjuna had the lowest error on test1, test2 and test3. Tesseract had the
+  lowest on test5, where both engines scored very low.
+- test4 is a stress test: its ground truth has only the Kannada message
+  lines, while both engines also read usernames, timestamps and phone
+  numbers. Arjuna read every Kannada line but swapped the order of two.
+- The two engines agreed on a last line of test4 that looks like a spelling
+  slip, which is how the ground-truth mistake was found.
+- Per-image Arjuna time on the development laptop varied from 38 to 81 s.
+- Only 5 images, so these numbers are a rough guide, not a conclusion.
