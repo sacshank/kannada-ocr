@@ -17,3 +17,15 @@ def load_image(path: str | Path) -> np.ndarray:  # takes a file path, returns an
     except (UnidentifiedImageError, OSError) as error:  # the file is missing, damaged, or not an image
         raise ValueError(f"Cannot read image: {path}") from error  # report one clear error type for all of these cases
     return cv2.cvtColor(array, cv2.COLOR_RGB2BGR)  # OpenCV expects blue-green-red order, so swap the channels
+
+    
+
+def resize_image(image: np.ndarray, factor: float) -> np.ndarray:  # takes an image and a scale factor, returns a resized copy
+    """Scale an image by a factor: 2.0 doubles its size, 0.5 halves it."""
+    if factor <= 0:  # a zero or negative factor makes no sense
+        raise ValueError("factor must be greater than 0")  # stop with a clear message
+    height, width = image.shape[:2]  # read the current height and width in pixels
+    new_width = max(1, round(width * factor))  # the new width, never less than 1 pixel
+    new_height = max(1, round(height * factor))  # the new height, never less than 1 pixel
+    method = cv2.INTER_CUBIC if factor > 1 else cv2.INTER_AREA  # cubic smoothing for enlarging, area averaging for shrinking
+    return cv2.resize(image, (new_width, new_height), interpolation=method)  # OpenCV expects (width, height) order here
