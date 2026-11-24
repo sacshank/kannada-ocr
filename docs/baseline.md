@@ -41,3 +41,47 @@ Observations:
 Reproduce with:
 
     PYTHONPATH=backend python scripts/evaluate_arjuna.py
+
+# Baseline: Tesseract and Arjuna-OCR on 5 images
+
+Metric: character error rate (lower is better). Tesseract used the kan+eng
+language setting; psm is Tesseract's page segmentation (layout) mode.
+
+| Image | Tesseract default | Tesseract psm 4 | Tesseract psm 6 | Arjuna-OCR 1.3.3 |
+|---|---|---|---|---|
+| test1 | 0.122 | 0.122 | 0.102 | 0.051 |
+| test2 | 0.357 | 0.357 | 0.857 | 0.119 |
+| test3 (blurred newspaper photo, very small text) | 1.000 | 0.216 | 0.128 | 0.027 |
+| test4 (WhatsApp group chat screenshot) | 0.918 | 0.918 | 0.948 | 1.052 |
+| test5 | 0.010 | 0.010 | 0.010 | 0.030 |
+| Average | 0.481 | 0.325 | 0.409 | 0.256 |
+
+Observations:
+
+- Arjuna had the lowest error on test1, test2 and test3. Tesseract had the
+  lowest on test5, where both engines scored very low.
+- Tesseract's default layout mode found no text in test3. Modes 4 and 6 read
+  it, but mode 6 made test2 much worse, so no single mode wins everywhere.
+- test4 is a stress test. Its ground truth contains only the Kannada message
+  lines. Both engines also read usernames, timestamps and phone numbers,
+  which count as errors. Arjuna read all the Kannada lines but swapped the
+  order of two of them, so line ordering needs attention.
+- Arjuna CER above 1.0 on test4 means it produced more edits than the ground
+  truth has characters.
+- Tesseract output contained invisible ZWNJ characters that are not in the
+  hand-typed ground truth; the strict metric counts them as errors.
+- Only 5 images, so these numbers are a rough guide, not a conclusion.
+
+Speed on the development laptop (Intel Core i3-5005U, WSL with 4.8 GB RAM):
+
+- Arjuna model load: 91.7 s on this run.
+- Arjuna per image: 36 to 46 s. An earlier run measured 26 to 31 s, so
+  timings vary between runs.
+- With the WSL default of 3.8 GB RAM, Arjuna was killed by the system while
+  reading these 5 images. Raising WSL memory to 5 GB fixed it.
+- Tesseract timings were not recorded.
+
+Reproduce with:
+
+    PYTHONPATH=backend python scripts/evaluate_tesseract.py --lang kan+eng --psm 4
+    PYTHONPATH=backend python scripts/evaluate_arjuna.py
