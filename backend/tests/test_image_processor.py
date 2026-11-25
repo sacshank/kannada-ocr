@@ -4,7 +4,7 @@ import numpy as np  # numpy: used to build small test images as arrays
 import pytest  # the testing framework, used here to check that errors are raised
 from PIL import Image  # Pillow: used to create small test images
 
-from app.image_processor import load_image, resize_image  # the functions we are testing
+from app.image_processor import load_image, read_dpi, resize_image, save_image  # the functions we are testing
 
 
 def test_load_image_returns_bgr_array(tmp_path):  # tmp_path is a temporary folder that pytest creates and deletes
@@ -60,3 +60,41 @@ def test_resize_rejects_invalid_factor():  # zero and negative factors must rais
         resize_image(image, 0)  # a factor of zero is not allowed
     with pytest.raises(ValueError):  # the same check for a negative factor
         resize_image(image, -1.5)  # a negative factor is not allowed
+
+
+
+def test_read_dpi_returns_stored_value(tmp_path):  # a file saved with a DPI must report it
+    path = tmp_path / "with_dpi.png"  # where the test image will be saved
+    Image.new("RGB", (10, 10)).save(path, dpi=(96, 96))  # save a small image with 96 DPI stored
+    dpi = read_dpi(path)  # read the DPI back
+    assert dpi is not None  # a value must be found
+    assert dpi[0] == pytest.approx(96, abs=1)  # PNG stores DPI in rounded units, so allow a tiny difference
+    assert dpi[1] == pytest.approx(96, abs=1)  # the same check for the vertical value
+
+
+def test_read_dpi_returns_none_when_missing(tmp_path):  # a file saved without DPI must report None
+    path = tmp_path / "no_dpi.png"  # where the test image will be saved
+    Image.new("RGB", (10, 10)).save(path)  # save a small image with no DPI information
+    assert read_dpi(path) is None  # nothing stored, so None is expected
+
+
+def test_read_dpi_rejects_missing_file(tmp_path):  # a path that does not exist must raise an error
+    with pytest.raises(ValueError):  # the test passes only if a ValueError is raised
+        read_dpi(tmp_path / "missing.png")  # try to read a file that was never created
+
+
+def test_save_image_round_trip_keeps_pixels_and_dpi(tmp_path):  # saving then loading must change nothing
+    original = np.zeros((20, 30, 3), dtype=np.uint8)  # a black image: 20 tall, 30 wide, 3 colours
+    original[5, 7] = (10, 20, 30)  # one pixel with distinct blue, green and red values
+    path = tmp_path / "saved.png"  # where the image will be saved
+    save_image(original, path, dpi=(150, 150))  # save it with 150 DPI
+    assert np.array_equal(load_image(path), original)  # the pixels must come back exactly the same
+    dpi = read_dpi(path)  # read the DPI back
+    assert dpi is not None  # a value must be found
+    assert dpi[0] == pytest.approx(150, abs=1)  # PNG stores DPI in rounded units, so allow a tiny difference
+
+
+def test_save_image_without_dpi_stores_none(tmp_path):  # no DPI given means none stored
+    path = tmp_path / "saved.png"  # where the image will be saved
+    save_image(np.zeros((10, 10, 3), dtype=np.uint8), path)  # save a small black image without DPI
+    assert read_dpi(path) is None  # nothing was stored, so None is expected
