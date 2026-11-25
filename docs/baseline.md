@@ -207,3 +207,58 @@ Observations:
   load of about 90 s. Timings varied between runs. Tesseract timings were
   not recorded.
 - Only 10 images, so these numbers are a rough guide, not a conclusion.
+
+# Phase 4 experiment: image enlargement (2026-11-25)
+
+Script: scripts/evaluate_preprocessing.py. Each image is re-saved as PNG
+at a scale factor (1.0 = unchanged) and scored with the same CER metric.
+The stored DPI of the original file is scaled with the image.
+
+## Arjuna-OCR (3 images; x1.0 matches the earlier Phase 3 scores)
+
+| Image | x1.0 | x2.0 |
+|---|---|---|
+| test10 | 0.308 | 0.282 |
+| test3 | 0.020 | 0.101 |
+| test7 | 0.238 | 0.310 |
+| Average | 0.189 | 0.231 |
+
+Enlarging 2x did not help Arjuna on average: two of three images got worse.
+Not tested: whether Arjuna's 2x results depend on the stored DPI.
+
+## Tesseract (kan+eng, default layout mode, all 10 images)
+
+| Image | x1.0 | x1.5 | x2.0 |
+|---|---|---|---|
+| test1 | 0.122 | 0.194 | 0.388 |
+| test10 | 0.590 | 0.436 | 0.487 |
+| test2 | 0.357 | 0.048 | 0.048 |
+| test3 | 1.000 | 1.000 | 1.000 |
+| test4 | 0.878 | 0.949 | 0.918 |
+| test5 | 0.010 | 0.020 | 0.020 |
+| test6 | 0.164 | 0.296 | 0.428 |
+| test7 | 0.869 | 0.669 | 0.380 |
+| test8 | 0.878 | 0.829 | 0.909 |
+| test9 | 0.207 | 0.187 | 0.178 |
+| Average | 0.508 | 0.463 | 0.476 |
+
+Findings about Tesseract:
+
+- Re-saving an image changes Tesseract's result. test10 scored 0.590 on the
+  original file but 0.667 on a re-saved PNG without DPI; storing 96 DPI in
+  the PNG restored 0.590.
+- test6 scored 0.041 on the original JPEG file but 0.164 on a re-saved PNG
+  with identical pixels (Pillow and OpenCV decode it identically). Giving
+  the exact DPI on the command line did not change this. The cause is not
+  known.
+- Scaling the DPI with the enlargement changed results strongly for images
+  that have a stored DPI. At x2.0, with DPI dropped (first run): test3 0.223,
+  test6 0.039, test10 0.846. With DPI scaled (this run): test3 1.000,
+  test6 0.428, test10 0.487.
+- Images without a stored DPI (test1, test2, test7) behave the same either
+  way. On those, enlarging helped test2 and test7 and hurt test1.
+- Because of this metadata sensitivity, the Tesseract averages above are not
+  a clean measure of the effect of enlarging.
+
+Conclusion so far: blanket enlargement is not a good default for either
+engine. Each preprocessing step must be measured per engine.
