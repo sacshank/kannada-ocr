@@ -55,3 +55,20 @@ def save_image(image: np.ndarray, path: str | Path, dpi: tuple[float, float] | N
         pil_image.save(path)  # save the picture as it is
     else:  # a DPI was given
         pil_image.save(path, dpi=dpi)  # save the picture and store the DPI in the file
+
+ 
+
+def enhance_contrast(image: np.ndarray, clip_limit: float = 2.0, tile_size: int = 8) -> np.ndarray:  # takes a BGR image, returns a new image with local contrast boosted
+    """Boost local contrast with CLAHE, working on lightness only so colours are kept."""
+    if image.ndim != 3 or image.shape[2] != 3:  # we only accept colour images with three channels
+        raise ValueError("image must have three colour channels")  # stop with a clear message
+    if clip_limit <= 0:  # a zero or negative limit makes no sense
+        raise ValueError("clip_limit must be greater than 0")  # stop with a clear message
+    if tile_size < 1:  # the image is split into tile_size x tile_size tiles, so at least 1
+        raise ValueError("tile_size must be at least 1")  # stop with a clear message
+    lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)  # convert to LAB: one lightness channel plus two colour channels
+    lightness, channel_a, channel_b = cv2.split(lab)  # separate the three channels
+    clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=(tile_size, tile_size))  # build the CLAHE tool; clip_limit caps how strongly contrast is boosted
+    boosted = clahe.apply(lightness)  # boost the contrast of the lightness channel only
+    merged = cv2.merge((boosted, channel_a, channel_b))  # put the three channels back together
+    return cv2.cvtColor(merged, cv2.COLOR_LAB2BGR)  # convert back to blue-green-red, a new array (the input is untouched)       

@@ -1,11 +1,10 @@
 """Tests for backend/app/image_processor.py."""
 
+import cv2  # OpenCV: used here to measure contrast in the tests
 import numpy as np  # numpy: used to build small test images as arrays
 import pytest  # the testing framework, used here to check that errors are raised
 from PIL import Image  # Pillow: used to create small test images
-
-from app.image_processor import load_image, read_dpi, resize_image, save_image  # the functions we are testing
-
+from app.image_processor import enhance_contrast, load_image, read_dpi, resize_image, save_image  # the functions we are testing
 
 def test_load_image_returns_bgr_array(tmp_path):  # tmp_path is a temporary folder that pytest creates and deletes
     path = tmp_path / "red.png"  # where the test image will be saved
@@ -98,3 +97,37 @@ def test_save_image_without_dpi_stores_none(tmp_path):  # no DPI given means non
     path = tmp_path / "saved.png"  # where the image will be saved
     save_image(np.zeros((10, 10, 3), dtype=np.uint8), path)  # save a small black image without DPI
     assert read_dpi(path) is None  # nothing was stored, so None is expected
+
+
+
+def test_enhance_contrast_keeps_shape_and_type():  # the output must have the same size and pixel type as the input
+    image = np.full((30, 40, 3), 128, dtype=np.uint8)  # a flat grey image: 30 tall, 40 wide, 3 colours
+    result = enhance_contrast(image)  # boost its contrast
+    assert result.shape == image.shape  # same height, width and colour channels
+    assert result.dtype == np.uint8  # pixels are still 8-bit numbers
+
+
+def test_enhance_contrast_increases_contrast_of_flat_image():  # a dull image must become more contrasty
+    rng = np.random.default_rng(0)  # a random number generator with a fixed seed, so the test gives the same result every time
+    image = rng.integers(100, 140, size=(64, 64, 3), dtype=np.uint8)  # noise with all values squeezed between 100 and 140
+    before = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).std()  # how spread out the brightness values are before
+    after = cv2.cvtColor(enhance_contrast(image), cv2.COLOR_BGR2GRAY).std()  # and after the boost
+    assert after > before  # a larger spread means higher contrast
+
+
+def test_enhance_contrast_does_not_modify_input():  # the original image array must stay untouched
+    rng = np.random.default_rng(1)  # a random number generator with a fixed seed
+    image = rng.integers(0, 256, size=(32, 32, 3), dtype=np.uint8)  # a random colour image
+    copy = image.copy()  # keep a copy to compare against afterwards
+    enhance_contrast(image)  # run the function and ignore its result
+    assert np.array_equal(image, copy)  # the input must be exactly as before
+
+
+def test_enhance_contrast_rejects_invalid_input():  # bad arguments must raise an error
+    colour = np.zeros((10, 10, 3), dtype=np.uint8)  # a small black colour image
+    with pytest.raises(ValueError):  # the test passes only if a ValueError is raised
+        enhance_contrast(np.zeros((10, 10), dtype=np.uint8))  # a grayscale image has no third channel
+    with pytest.raises(ValueError):  # the same kind of check
+        enhance_contrast(colour, clip_limit=0)  # a zero clip limit is not allowed
+    with pytest.raises(ValueError):  # the same kind of check
+        enhance_contrast(colour, tile_size=0)  # a tile size of zero is not allowed
