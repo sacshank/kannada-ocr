@@ -262,3 +262,48 @@ Findings about Tesseract:
 
 Conclusion so far: blanket enlargement is not a good default for either
 engine. Each preprocessing step must be measured per engine.
+
+# Phase 4 experiment: contrast enhancement (2026-11-25)
+
+Contrast enhancement: CLAHE on the lightness channel (clip limit 2.0,
+8x8 tiles), applied before the engine reads the image. Script:
+scripts/evaluate_preprocessing.py --contrast. The comparison column is the
+same pipeline without contrast (x1.0); for the three Arjuna images these
+values match the Phase 3 scores.
+
+## Arjuna-OCR (3 images)
+
+| Image | Without contrast | With contrast |
+|---|---|---|
+| test10 | 0.308 | 0.333 |
+| test3 | 0.020 | 0.041 |
+| test7 | 0.238 | 0.663 |
+| Average | 0.189 | 0.346 |
+
+## Tesseract (kan+eng, default layout mode, all 10 images)
+
+| Image | Without contrast | With contrast |
+|---|---|---|
+| test1 | 0.122 | 1.000 |
+| test10 | 0.590 | 1.000 |
+| test2 | 0.357 | 0.452 |
+| test3 | 1.000 | 0.676 |
+| test4 | 0.878 | 0.898 |
+| test5 | 0.010 | 0.030 |
+| test6 | 0.164 | 0.775 |
+| test7 | 0.869 | 0.798 |
+| test8 | 0.878 | 0.016 |
+| test9 | 0.207 | 0.253 |
+| Average | 0.508 | 0.590 |
+
+Findings:
+
+- Contrast enhancement made Arjuna worse on all three images tested, most
+  strongly on test7 (0.238 to 0.663). The cause is not known.
+- For Tesseract it helped three images (test3, test7, test8) and hurt seven.
+  A CER of 1.000 means empty output scores; the output was not inspected.
+- Neither enlargement nor contrast enhancement is a safe default for either
+  engine. The original image remains the default input.
+- Only one parameter setting was tried, on a small and varied test set.
+- Not tested: tilted or shadowed photographs (the test set has none),
+  deskewing, denoising, thresholding, sharpening.

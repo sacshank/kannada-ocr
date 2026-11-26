@@ -1,9 +1,9 @@
-"""Compare OCR error at different image sizes (Phase 4 experiment).
+"""Compare OCR error with different image preprocessing (Phase 4 experiment).
 
 Usage (from the project root, with the virtual environment active):
     PYTHONPATH=backend python scripts/evaluate_preprocessing.py --engine tesseract --factors 1.0
-    PYTHONPATH=backend python scripts/evaluate_preprocessing.py --engine tesseract --factors 0.5 1.0 1.5 2.0
-    PYTHONPATH=backend python scripts/evaluate_preprocessing.py --engine arjuna --factors 1.0 2.0 --only test3 test5
+    PYTHONPATH=backend python scripts/evaluate_preprocessing.py --engine tesseract --factors 1.0 1.5 2.0
+    PYTHONPATH=backend python scripts/evaluate_preprocessing.py --engine arjuna --factors 1.0 --contrast --only test3 test7
 """
 
 import argparse  # reads the options typed after the script name
@@ -12,7 +12,7 @@ import tempfile  # makes a temporary folder that is deleted automatically
 import time  # used to measure how long each image takes
 from pathlib import Path  # makes working with file paths simple and safe
 
-from app.image_processor import load_image, read_dpi, resize_image, save_image  # our own image functions from Phase 4
+from app.image_processor import enhance_contrast, load_image, read_dpi, resize_image, save_image  # our own image functions from Phase 4
 from app.metrics import character_error_rate  # your CER function from backend/app/metrics.py
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}  # only these file types count as images
@@ -44,9 +44,10 @@ def read_with_arjuna(ocr, image_path: Path) -> str:  # run Arjuna on one image f
 
 
 def main() -> None:  # the main function; it runs the whole experiment
-    parser = argparse.ArgumentParser(description="Score OCR at different image sizes.")  # sets up the option reader
+    parser = argparse.ArgumentParser(description="Score OCR with different image preprocessing.")  # sets up the option reader
     parser.add_argument("--engine", choices=["tesseract", "arjuna"], required=True)  # which engine to test (required)
     parser.add_argument("--factors", nargs="+", type=float, default=[1.0])  # one or more scale factors; 1.0 means unchanged
+    parser.add_argument("--contrast", action="store_true", help="apply contrast enhancement (CLAHE) before reading")  # a flag: present means on
     parser.add_argument("--only", nargs="*", default=None, help="image names without extension, e.g. test3 test5")  # optional: test only these images
     parser.add_argument("--lang", default="kan+eng", help="Tesseract language, e.g. kan or kan+eng")  # Tesseract language setting
     parser.add_argument("--psm", default=None, help="Tesseract page segmentation mode, e.g. 4 or 6")  # Tesseract layout mode, default none
@@ -61,6 +62,8 @@ def main() -> None:  # the main function; it runs the whole experiment
     if not images:  # if the list is empty, there is nothing to evaluate
         print("No images to evaluate")  # tell the user what is wrong
         return  # stop the function here
+
+    print(f"Engine: {args.engine} | contrast enhancement: {'on' if args.contrast else 'off'}")  # remind us which settings this run uses
 
     ocr = None  # Arjuna is only loaded when it is needed
     if args.engine == "arjuna":  # only for the Arjuna engine
@@ -83,6 +86,8 @@ def main() -> None:  # the main function; it runs the whole experiment
             for factor in args.factors:  # try each requested scale factor
                 try:  # a failure on one version must not stop the whole run
                     version = original if factor == 1.0 else resize_image(original, factor)  # unchanged, or resized copy
+                    if args.contrast:  # only when contrast enhancement was requested
+                        version = enhance_contrast(version)  # boost local contrast; this returns a new array and leaves the original alone
                     version_dpi = None if original_dpi is None else (original_dpi[0] * factor, original_dpi[1] * factor)  # DPI scales with the size (our assumption)
                     temp_path = Path(tmp) / f"{image.stem}_{factor}.png"  # where this version is saved for a moment
                     save_image(version, temp_path, dpi=version_dpi)  # save it as PNG, keeping the DPI if the original had one
