@@ -1,5 +1,5 @@
 """Tests for POST /api/ocr. They use a fake engine, so no models are loaded."""
-
+import logging  # lets the test look at the log messages the service writes
 import io  # gives us BytesIO, a file that lives in memory
 import tempfile  # lets us point temporary files at a folder the test controls
 from pathlib import Path  # makes working with file paths simple and safe
@@ -191,3 +191,14 @@ def test_plain_text_in_the_file_field_gets_a_consistent_error():  # a malformed 
     response = make_client(RecordingEngine()).post("/api/ocr", data={"file": "just text"})  # send ordinary text in the "file" field
     assert response.status_code in (400, 422)  # either kind of "bad request" is acceptable
     assert response.json()["success"] is False  # and the error has our usual shape
+
+
+
+def test_log_line_has_the_timing_but_never_the_text(caplog):  # logs must never contain what the user uploaded
+    secret = "ರಹಸ್ಯ ಪಠ್ಯ"  # a recognisable piece of "extracted" text
+    client = make_client(RecordingEngine(text=secret))  # an engine that "reads" it
+    with caplog.at_level(logging.INFO, logger="app.routes"):  # record the messages written by routes.py
+        post_file(client, make_image_bytes())  # upload a valid image
+    messages = [record.getMessage() for record in caplog.records if record.name == "app.routes"]  # the texts of those messages
+    assert any("OCR finished" in message for message in messages)  # the timing line was written
+    assert all(secret not in message for message in messages)  # and the extracted text never appears in a log line

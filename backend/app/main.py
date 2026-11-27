@@ -1,5 +1,5 @@
 """Creates the FastAPI application and wires its parts together."""
-
+import os  # reads environment variables, which are settings given from outside the program
 import logging  # Python's standard way to write log messages
 import threading  # lets us load the models in the background
 from contextlib import asynccontextmanager  # helps define what happens when the server starts and stops
@@ -70,5 +70,23 @@ def create_app(settings: Settings | None = None, engine: OcrEngine | None = None
     app.include_router(router)  # add the routes from routes.py
     return app  # hand back the finished application
 
+def configure_logging() -> None:  # switches on log messages for the whole backend
+    """Show log messages at the level in LOG_LEVEL (default INFO); an unknown level falls back to INFO."""
+    level_name = os.environ.get("LOG_LEVEL", "INFO").upper()  # the level from the environment, or INFO if it is not set
+    level = getattr(logging, level_name, None)  # look the name up in Python's logging module, for example "DEBUG"
+    if not isinstance(level, int):  # the name was not a real level
+        level = logging.INFO  # fall back to INFO
+    logging.basicConfig(level=level, format="%(asctime)s %(levelname)s %(name)s: %(message)s")  # print each message with its time, level and source
 
+
+def configure_logging() -> None:  # switches on log messages for the whole backend
+    """Show log messages at the level in LOG_LEVEL (default INFO); an unknown level falls back to INFO."""
+    level_name = os.environ.get("LOG_LEVEL", "INFO").upper()  # the level from the environment, or INFO if it is not set
+    level = getattr(logging, level_name, None)  # look the name up in Python's logging module, for example "DEBUG"
+    if not isinstance(level, int):  # the name was not a real level
+        level = logging.INFO  # fall back to INFO
+    logging.basicConfig(level=level, format="%(asctime)s %(levelname)s %(name)s: %(message)s")  # print each message with its time, level and source
+
+
+configure_logging()  # switch logging on when the server starts
 app = create_app()  # the application that the server runs: uvicorn app.main:app
